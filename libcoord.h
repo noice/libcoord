@@ -1,7 +1,7 @@
 /*
  * Library for creating modules.
  * Defines: 
- *      1. Module's info; 
+ *      1. Modules' information; 
  *      2. Communication between modules;
  */
 #ifndef LIBCOORD_H
@@ -14,7 +14,9 @@
             int read_end;  /* module's read-end */
         } Module;
         /* functions */
+        // Module information
+        Module * get_module(char * name);
         // Module communications
-        int send_msg(int write_end, char * buf, int len); /* Send message to module  */
-        int get_msg(int read_end, char * buf, int len);   /* Get message from module */
+        int send_msg(Module * mod, char * buf, int len);  /* Send message to module  */
+        int get_msg(Module * mod, char * buf, int len);   /* Get message from module */
 #endif
