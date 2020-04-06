@@ -31,8 +31,7 @@
 
         /* functions */
         Module*  get_module_by_name(char *name);                   /* Get modules' information by name */
-        Module*  get_module_by_id(mod_id id);                      /* Get modules' information by id */
-        int      init_module();                                    /* Initialize module */
+        int      init_module(char *name, char *addr, char *port);                                    /* Initialize module */
         int      connect_to_module(Module *mod);                   /* Connect to module */
         int      send_msg(Module *mod, char *buf, msg_len len);    /* Send message to module  */
         int      handle(int (*handler)(Message *));                /* Handle incoming messages */
