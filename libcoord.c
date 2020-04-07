@@ -154,10 +154,30 @@ connect_to_coordinator(char *name, char *addr, char *port) {
     // Read answer
     read(sfd, ans, 27); 
 
+    // TODO: Perhaps in future this will be in separate function
     // If LOL, then everything is alright
     if (strncmp(ans, "LOL", 3) == 0) {
-        // TODO: Get fds for communicating with Coordinator and update value in modules' data storage
+        char write_end[10]; /* store write-end to Coordinator here */
+        char read_end[10];  /* store read-end to Coordinator here */
+        
+        int i, j = 0;
+
+        // Copy write-end
+        for (i = ans[4]; i != ' '; i++) {
+            write_end[j++] = ans[i];                   
+        }
+
+        j = 0; 
+        i += 1;
+
+        // Copy read-end
+        for (; i != ' '; i++) {
+            read_end[j++] = ans[i];
+        }
+        
+        // TODO: Update communication info in storage
         close(sfd);
+
         return 0;
     }
     // It means module with name already exist
@@ -165,12 +185,14 @@ connect_to_coordinator(char *name, char *addr, char *port) {
     else if (strncmp(ans, "IKNOW", 5) == 0) {
         fprintf(stderr, "Module with that name already exist\n"); 
         close(sfd);
+
         return -1;
     }
     // Other messages also is error
     // Return -1
     else {
         close(sfd);
+
         return -1;
     }
 
