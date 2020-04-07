@@ -8,6 +8,7 @@
 #include <stdlib.h>     /* Standard funcs */
 #include <stdio.h>      /* Formatted output */
 #include <unistd.h>     /* Syscalls */
+#include <stdbool.h>    /* Bools */
 
 // ---------------------------------- Prototypes --------------------------------
 // Additional funcs
@@ -162,17 +163,23 @@ connect_to_coordinator(char *name, char *addr, char *port) {
         
         int i, j = 0;
 
-        // Copy write-end
-        for (i = ans[4]; i != ' '; i++) {
-            write_end[j++] = ans[i];                   
-        }
+        bool is_reading_write = true; /* checking what value is reading */
 
-        j = 0; 
-        i += 1;
+        for (i = 4; ans[i] != '\n'; i++) {
+            // If space is encountered then reading write-end value is done
+            // Start reading read-end (ahaha) value
+            if (ans[i] == ' ') {
+                is_reading_write = false;
+                j = 0;
+            }
 
-        // Copy read-end
-        for (; i != ' '; i++) {
-            read_end[j++] = ans[i];
+            // Copy write-end
+            if (is_reading_write) {
+                write_end[j++] = ans[i];                   
+            // Copy read-end
+            } else {
+                read_end[j++] = ans[i];
+            }
         }
         
         // TODO: Update communication info in storage
