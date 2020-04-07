@@ -6,12 +6,14 @@
 #include <netdb.h>      /* Network address and service translation */
 #include <string.h>     /* Memset */
 #include <stdlib.h>     /* Standard funcs */
+#include <stdio.h>      /* Formatted output */
+#include <unistd.h>     /* Syscalls */
 
 // ---------------------------------- Prototypes --------------------------------
 // Additional funcs
 int connect_to_coordinator();
 
-int init_modules();
+int init_modules_storage();
 // ---------------------------------- Main funcs --------------------------------
 /*
  * Initialize new module
@@ -20,9 +22,14 @@ int init_modules();
  */
 int
 init_module(char *name, char *addr, char *port) {
-    connect_to_coordinator(char *name, char *addr, char *port);
+    if (connect_to_coordinator(name, addr, port)) {
+       fprintf(stderr, "Error while connecting to Coordinator\n"); 
+       return -1;
+    }
 
-    init_modules();
+    init_modules_storage();
+
+    return 0;
 }
 
 /*
@@ -33,6 +40,7 @@ init_module(char *name, char *addr, char *port) {
  */
 Module* 
 get_module_by_name(char *name) {
+    return NULL;
 }
 
 /*
@@ -43,6 +51,7 @@ get_module_by_name(char *name) {
  */
 int
 connect_to_module(Module *mod) {
+    return 0;
 }
 
 /*
@@ -51,6 +60,7 @@ connect_to_module(Module *mod) {
  */
 int
 send_msg(Module *mod, char *buf, msg_len len) {
+    return 0;
 }
 
 /*
@@ -60,6 +70,7 @@ send_msg(Module *mod, char *buf, msg_len len) {
  */
 int
 handle(int (*handler)(Message*)) {
+    return 0;
 }
 
 /*
@@ -70,6 +81,7 @@ handle(int (*handler)(Message*)) {
  */
 Message*
 get_msg() {
+    return NULL;
 }
 // ------------------------------- Additional funcs -----------------------------
 /*
@@ -96,7 +108,7 @@ connect_to_coordinator(char *name, char *addr, char *port) {
     // Get possible adresses for connection
     status = getaddrinfo(name, port, &hints, &result);
     if (status != 0) {
-       fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+       fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
        return -1;
     }
 
@@ -129,27 +141,39 @@ connect_to_coordinator(char *name, char *addr, char *port) {
     freeaddrinfo(result);
 
     // Send to Coordinator "IEXIST (module's name)"
-    char msg[263];
-    char ans[26];
+    char msg[264]; /* message to Coordinator*/
+    char ans[27];  /* response */
     
-    fprintf(msg, "IEXIST (%s)", name);
-    if (send(sfd, msg, strlen(msg)) == -1) {
+    sprintf(msg, "IEXIST (%s)\n", name);
+    if (send(sfd, msg, strlen(msg), 0) == -1) {
         perror("Error while sending \"IEXIST\" to Coordinator");
         close(sfd);
         return -1;
     }
     
     // Read answer
-    read(sfd, ans, 26); 
+    read(sfd, ans, 27); 
 
     // If LOL, then everything is alright
-    if (strncmp(ans, "LOL", 3) != 0) { 
-    // There was some error (maybe module with that name exist, idk)
+    if (strncmp(ans, "LOL", 3) == 0) {
+        // TODO: Get fds for communicating with Coordinator and update value in modules' data storage
+        close(sfd);
+        return 0;
+    }
+    // It means module with name already exist
+    // Report about it and return error
+    else if (strncmp(ans, "IKNOW", 5) == 0) {
+        fprintf(stderr, "Module with that name already exist\n"); 
         close(sfd);
         return -1;
     }
-    // TODO: Get fds for communicating with Coordinator and update value in modules' data storage
-    close(sfd);
+    // Other messages also is error
+    // Return -1
+    else {
+        close(sfd);
+        return -1;
+    }
+
 }
 
 /*
@@ -157,4 +181,5 @@ connect_to_coordinator(char *name, char *addr, char *port) {
  */
 int
 init_modules_storage() {
+    return 0;
 }
