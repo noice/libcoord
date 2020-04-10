@@ -8,6 +8,7 @@
 // ------------------------------- Prototypes -----------------------------------
 Item* new_item(const char *, void *);
 void* free_item(Item *);
+int   get_hash(const char *, int , int );
 
 // ------------------------------- Main funcs -----------------------------------
 /*
@@ -96,4 +97,22 @@ free_item(Item *it) {
     free(it);
 
     return value;
+}
+
+/*
+ * Calculates hash of string
+ * Reduce the size of the integer index in hash table
+ * Prime number here must be larger than number of characters in used alphabet (ASCII -> prime > 128)
+ */
+int
+get_hash(const char *str, int prime, int number_of_elem) {
+    long hash = 0; /* result hash */
+    int str_len = strlen(s);
+    for(int i = 0; i < str_len; i++) {
+        // Calculate hash
+        hash += (long)pow(prime, str_len - (i+1)) * str[i];
+        // Reduce to index in hash table
+        hash %= number_of_elem;
+    }
+    return (int) hash;
 }
