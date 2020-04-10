@@ -7,6 +7,7 @@
 
 // ------------------------------- Prototypes -----------------------------------
 Item* new_item(const char *, void *);
+void* free_item(Item *);
 
 // ------------------------------- Main funcs -----------------------------------
 /*
@@ -15,15 +16,20 @@ Item* new_item(const char *, void *);
  */
 Hash_table*
 new_hash_table() {
-    return NULL;
+    Hash_table *ht = (Hash_table *) malloc(sizeof(Hash_table));
+
+    ht->size = 10;                                        /* initial size */
+    ht->count = 0;                                        /* initial number of elements*/
+    ht->items = calloc((size_t) ht->size, sizeof(Item*)); /* initialize array */
+    return ht;
 }
 
 /*
- * Get Item from Hash table
+ * Get Item's value from Hash table
  * If key doesn't exist, return NULL
  */
 void*
-get_item_value(Hash_table* ht, const char *key) {
+get_item_value(Hash_table *ht, const char *key) {
     return NULL;
 }
 
@@ -33,30 +39,61 @@ get_item_value(Hash_table* ht, const char *key) {
  * Returns -1 if was an error
  */
 int
-update_item(Hash_table* ht, const char *key, void *value) {
+update_item(Hash_table *ht, const char *key, void *value) {
     return 0;
 }
 
 /*
- * Deletes Item and returns stored value by it
+ * Deletes Item and returns stored value 
  * If key doesn't exist, returns NULL
  */
 void*
-delete_item(Hash_table* ht, const char *key) {
+delete_item(Hash_table *ht, const char *key) {
     return NULL;
 }
 
 /*
  * Deletes Hash table
+ * Free all Items without returning their value
+ * Then free Hash table
  */
 void
-delete_hash_table(Hash_table* ht) {
+delete_hash_table(Hash_table *ht) {
+    // Delete all Items 
+    for(int i = 0; i < ht->size; i++) {
+        // Get next item
+        Item *it = ht->items[i];
+        // If Item exist, delete it
+        if (item != NULL) {
+            delete_item(it);
+        }
+    }
+
+    free(ht->items); /* Free array */
+    free(ht);        /* Free Hash table */
 }
 // ---------------------------- Additional funcs --------------------------------
 /*
- * New item for hash table
+ * New Item for hash table
  */
 Item*
 new_item(const char *key, void *value) {
-    return NULL;
+    Item *it = (Item *) malloc(sizeof(Item));
+    it->key = strdup(key); /* copy key */
+    it->value = value;
+    return it;
+}
+
+/*
+ * Free Item for hash table
+ */
+void*
+free_item(Item *it) {
+    void *value = it->value; /* store value */
+
+    // Free copied key and memory
+    free(it->key);
+    free(it);
+
+    return value;
 }
