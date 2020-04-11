@@ -1,8 +1,8 @@
 /*
  * Hash table for storing Module's information
  */
-#ifndef HASH_TABLE.H
-    #define HASH_TABLE.H
+#ifndef HASH_TABLE_H
+    #define HASH_TABLE_H
     /* structs */
     // Item of Hash table
     typedef struct hash_table_item {
@@ -19,8 +19,8 @@
 
     /* funcs */
     Hash_table* new_hash_table();                                          /* Returns new hash table */
-    void*       get_item_value(Hash_table *ht, const char *key);           /* Get value by key */
-    int         update_item(Hash_table *ht, const char *key, void *value); /* Updates value by key (add new item if new key provided) */
+    void*       search_item(Hash_table *ht, const char *key);              /* Get value by key */
+    int         insert_item(Hash_table *ht, const char *key, void *value); /* Insert value by key */
     void*       delete_item(Hash_table *ht, const char *key);              /* Deletes value by key and returns it */
     void        delete_hash_table(Hash_table *ht);                         /* Deletes Hash table*/
 #endif

@@ -4,11 +4,17 @@
 // -------------------------------- Headers -------------------------------------
 #include "hash_table.h" /* Hash table declarations */
 #include <stdlib.h>     /* Working with heap */ 
+#include <string.h>     /* Working with strings */ 
+#include <math.h>       /* Working with math functions */ 
 
 // ------------------------------- Prototypes -----------------------------------
 Item* new_item(const char *, void *);
 void* free_item(Item *);
 int   get_hash(const char *, int , int );
+int   get_index_ht(const char *, int, int);
+
+// ----------------------------- Global values ----------------------------------
+static Item HT_DELETED_ITEM = {NULL, NULL};
 
 // ------------------------------- Main funcs -----------------------------------
 /*
@@ -30,17 +36,49 @@ new_hash_table() {
  * If key doesn't exist, return NULL
  */
 void*
-get_item_value(Hash_table *ht, const char *key) {
+search_item(Hash_table *ht, const char *key) {
+    // Get index in Hash table
+    int index = get_index_ht(key, ht->size, 0);
+
+    // Get Item by index
+    Item *it = ht->items[index];
+
+    // Search Item
+    int i = 1;
+    while(it != NULL) {
+        if (it != &HT_DELETED_ITEM) {
+            if (strcmp(it->key, key) == 0) {
+                return it->value;
+            }
+        }
+
+        index = get_index_ht(key, ht->size, i);
+        it = ht->items[index];
+        i++;
+    }
+    // Item doesn't exist
     return NULL;
 }
 
 /*
- * Updates Item by provided key in provided Hash table
- * If key doesn't exist, create new Item with given value in hash table
+ * Inserts Item by provided key in provided Hash table
  * Returns -1 if was an error
  */
 int
-update_item(Hash_table *ht, const char *key, void *value) {
+insert_item(Hash_table *ht, const char *key, void *value) {
+    Item *it = new_item(key, value);
+    int index = get_index_ht(it->key, ht->size, 0);
+    Item *cur_it = ht->items[index];
+    int i = 1;
+    // If current Item is not NULL
+    // Iterate to find new place where to put new item
+    while((cur_it != NULL) && (cur_it != &HT_DELETED_ITEM)) {
+        index = get_index_ht(it->key, ht->size, i);
+        cur_it = ht->items[index];
+        i++;
+    }
+    ht->items[index] = it;
+    ht->count++;
     return 0;
 }
 
@@ -50,6 +88,25 @@ update_item(Hash_table *ht, const char *key, void *value) {
  */
 void*
 delete_item(Hash_table *ht, const char *key) {
+    int index = get_index_ht(key, ht->size, 0);
+    Item *it = ht->items[index];
+    void *val;
+    int i = 1;
+    while(it != NULL) {
+        if (it != &HT_DELETED_ITEM) {
+            if (strcmp(it->key, key) == 0) {
+                val = free_item(it);
+                ht->items[index] = &HT_DELETED_ITEM;
+                ht->count--; 
+                return val;
+            }
+        }
+
+        index = get_index_ht(key, ht->size, i);
+        it = ht->items[index];
+        i++;
+    }
+
     return NULL;
 }
 
@@ -58,6 +115,7 @@ delete_item(Hash_table *ht, const char *key) {
  * Free all Items without returning their value
  * Then free Hash table
  */
+// TODO: Free stored values
 void
 delete_hash_table(Hash_table *ht) {
     // Delete all Items 
@@ -65,8 +123,8 @@ delete_hash_table(Hash_table *ht) {
         // Get next item
         Item *it = ht->items[i];
         // If Item exist, delete it
-        if (item != NULL) {
-            delete_item(it);
+        if (it != NULL) {
+            free_item(it);
         }
     }
 
@@ -100,19 +158,30 @@ free_item(Item *it) {
 }
 
 /*
- * Calculates hash of string
- * Reduce the size of the integer index in hash table
+ * Returns hash of string
+ * Reduce the size of the result hash to index in hash table
  * Prime number here must be larger than number of characters in used alphabet (ASCII -> prime > 128)
  */
 int
-get_hash(const char *str, int prime, int number_of_elem) {
+get_hash(const char *str, int prime, int ht_size) {
     long hash = 0; /* result hash */
-    int str_len = strlen(s);
+    int str_len = strlen(str);
     for(int i = 0; i < str_len; i++) {
         // Calculate hash
         hash += (long)pow(prime, str_len - (i+1)) * str[i];
         // Reduce to index in hash table
-        hash %= number_of_elem;
+        hash %= ht_size;
     }
     return (int) hash;
+}
+
+/*
+ * Get index in hash table
+ * To deal with collisions using open address method with double hashing
+ */
+int
+get_index_ht(const char *str, int ht_size, int attempt) {
+    int hash_a = get_hash(str, 487, ht_size);
+    int hash_b = get_hash(str, 439, ht_size);
+    return (hash_a + (attempt * (hash_b + 1))) % ht_size;
 }
