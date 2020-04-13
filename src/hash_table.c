@@ -12,6 +12,9 @@ Item* new_item(const char *, void *);
 void* free_item(Item *);
 int   get_hash(const char *, int , int );
 int   get_index_ht(const char *, int, int);
+void  resize_hash_table(Hash_table *, int );
+void  resize_up(Hash_table *);
+void  resize_down(Hash_table *);
 
 // ----------------------------- Global values ----------------------------------
 static Item HT_DELETED_ITEM = {NULL, NULL};
@@ -22,10 +25,10 @@ static Item HT_DELETED_ITEM = {NULL, NULL};
  * Returns NULL if error is occured
  */
 Hash_table*
-new_hash_table() {
+new_hash_table(int size) {
     Hash_table *ht = (Hash_table *) malloc(sizeof(Hash_table));
 
-    ht->size = 10;                                        /* initial size */
+    ht->size = size;                                      /* initial size */
     ht->count = 0;                                        /* initial number of elements*/
     ht->items = calloc((size_t) ht->size, sizeof(Item*)); /* initialize array */
     return ht;
@@ -66,6 +69,14 @@ search_item(Hash_table *ht, const char *key) {
  */
 int
 insert_item(Hash_table *ht, const char *key, void *value) {
+    // Check for load
+    int load = ht->count * 100 / ht->size;
+
+    // If more than 70 percent is occupied
+    // Increase size of Hash table
+    if (load > 70) {
+        resize_up(ht);
+    }
     Item *it = new_item(key, value);
     int index = get_index_ht(it->key, ht->size, 0);
     Item *cur_it = ht->items[index];
@@ -88,6 +99,14 @@ insert_item(Hash_table *ht, const char *key, void *value) {
  */
 void*
 delete_item(Hash_table *ht, const char *key) {
+    // Check for load
+    int load = ht->count * 100 / ht->size;
+    
+    // If less than 10 percent is occupied
+    // Decrease size of Hash table
+    if (load < 10) {
+        resize_down(ht);
+    }
     int index = get_index_ht(key, ht->size, 0);
     Item *it = ht->items[index];
     void *val;
@@ -114,8 +133,8 @@ delete_item(Hash_table *ht, const char *key) {
  * Deletes Hash table
  * Free all Items without returning their value
  * Then free Hash table
+ * TODO: Reimplement later to support multiple types
  */
-// TODO: Free stored values
 void
 delete_hash_table(Hash_table *ht) {
     // Delete all Items 
@@ -184,4 +203,47 @@ get_index_ht(const char *str, int ht_size, int attempt) {
     int hash_a = get_hash(str, 487, ht_size);
     int hash_b = get_hash(str, 439, ht_size);
     return (hash_a + (attempt * (hash_b + 1))) % ht_size;
+}
+
+/*
+ * Resize Hash table to given size
+ */
+void
+resize_hash_table(Hash_table *ht, int size) {
+    // Creating new Hash table
+    Hash_table *new_ht = new_hash_table(size);
+
+    // Copying Items to new Hash table
+    // If not NULLs and deleted
+    for(int i = 0; i < ht->size; i++) {
+        Item *it = ht->items[i];
+        if (it != NULL && it != &HT_DELETED_ITEM) {
+            insert_item(new_ht, it->key, it->value);
+        }
+    }
+    
+    // Change pointer to new Hash table
+    Hash_table *tmp_ht = ht;
+    ht = new_ht;
+
+    // Delete old Hash table
+    delete_hash_table(tmp_ht);
+}
+
+/*
+ * Resize Hash table up
+ */
+void
+resize_up(Hash_table *ht) {
+    int new_size = ht->size * 2;
+    resize_hash_table(ht, new_size);
+}
+
+/*
+ * Resize Hash table down
+ */
+void
+resize_down(Hash_table *ht) {
+    int new_size = ht->size / 2;
+    resize_hash_table(ht, new_size);
 }

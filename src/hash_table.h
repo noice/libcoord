@@ -7,7 +7,7 @@
     // Item of Hash table
     typedef struct hash_table_item {
         char *key;   /* key is represented only by string */
-        void *value; /* value can be any type */
+        void *value; /* Module's struct */
     } Item;
 
     // Hash table
@@ -18,7 +18,7 @@
     } Hash_table;
 
     /* funcs */
-    Hash_table* new_hash_table();                                          /* Returns new hash table */
+    Hash_table* new_hash_table(int size);                                  /* Returns new hash table with given size*/
     void*       search_item(Hash_table *ht, const char *key);              /* Get value by key */
     int         insert_item(Hash_table *ht, const char *key, void *value); /* Insert value by key */
     void*       delete_item(Hash_table *ht, const char *key);              /* Deletes value by key and returns it */
