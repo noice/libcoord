@@ -25,12 +25,13 @@ static Item HT_DELETED_ITEM = {NULL, NULL};
  * Returns NULL if error is occured
  */
 Hash_table*
-new_hash_table(int size) {
+new_hash_table(int size, value_free_fn handler) {
     Hash_table *ht = (Hash_table *) malloc(sizeof(Hash_table));
 
     ht->size = size;                                      /* initial size */
     ht->count = 0;                                        /* initial number of elements*/
     ht->items = calloc((size_t) ht->size, sizeof(Item*)); /* initialize array */
+    ht->handler = handler;                                /* value handler */
     return ht;
 }
 
@@ -97,7 +98,7 @@ insert_item(Hash_table *ht, const char *key, void *value) {
  * Deletes Item and returns stored value 
  * If key doesn't exist, returns NULL
  */
-void*
+void
 delete_item(Hash_table *ht, const char *key) {
     // Check for load
     int load = ht->count * 100 / ht->size;
@@ -107,17 +108,25 @@ delete_item(Hash_table *ht, const char *key) {
     if (load < 10) {
         resize_down(ht);
     }
+
+    // Get Item
     int index = get_index_ht(key, ht->size, 0);
     Item *it = ht->items[index];
-    void *val;
+
+    void *val; /* here will be stored value */
     int i = 1;
-    while(it != NULL) {
+    // If there was a collision
+    // Try again!
+    while (it != NULL) {
         if (it != &HT_DELETED_ITEM) {
             if (strcmp(it->key, key) == 0) {
                 val = free_item(it);
+                if (ht->handler != NULL) {
+                    ht->handler(val);
+                }
+
                 ht->items[index] = &HT_DELETED_ITEM;
                 ht->count--; 
-                return val;
             }
         }
 
@@ -125,25 +134,27 @@ delete_item(Hash_table *ht, const char *key) {
         it = ht->items[index];
         i++;
     }
-
-    return NULL;
 }
 
 /*
  * Deletes Hash table
  * Free all Items without returning their value
  * Then free Hash table
- * TODO: Reimplement later to support multiple types
  */
 void
 delete_hash_table(Hash_table *ht) {
+    void *val; /* here will be stored values */
     // Delete all Items 
     for(int i = 0; i < ht->size; i++) {
         // Get next item
         Item *it = ht->items[i];
         // If Item exist, delete it
         if (it != NULL) {
-            free_item(it);
+            val = free_item(it);
+
+            if (ht->handler != NULL) {
+                ht->handler(val);
+            }
         }
     }
 
@@ -211,7 +222,7 @@ get_index_ht(const char *str, int ht_size, int attempt) {
 void
 resize_hash_table(Hash_table *ht, int size) {
     // Creating new Hash table
-    Hash_table *new_ht = new_hash_table(size);
+    Hash_table *new_ht = new_hash_table(size, ht->handler);
 
     // Copying Items to new Hash table
     // If not NULLs and deleted
