@@ -1,15 +1,16 @@
 /*
- * Implementation of hash table
+ * Implementation of Hash table
  */
 // -------------------------------- Headers -------------------------------------
 #include "hash_table.h" /* Hash table declarations */
+
 #include <stdlib.h>     /* Working with heap */ 
 #include <string.h>     /* Working with strings */ 
 #include <math.h>       /* Working with math functions */ 
 
 // ------------------------------- Prototypes -----------------------------------
-Item* new_item(const char *, void *);
-void* free_item(Item *);
+HT_Item* new_item(const char *, void *);
+void* free_item(HT_Item *);
 int   get_hash(const char *, int , int );
 int   get_index_ht(const char *, int, int);
 void  resize_hash_table(Hash_table *, int );
@@ -17,7 +18,7 @@ void  resize_up(Hash_table *);
 void  resize_down(Hash_table *);
 
 // ----------------------------- Global values ----------------------------------
-static Item HT_DELETED_ITEM = {NULL, NULL};
+static HT_Item HT_DELETED_ITEM = {NULL, NULL};
 
 // ------------------------------- Main funcs -----------------------------------
 /*
@@ -28,28 +29,29 @@ Hash_table*
 new_hash_table(int size, value_free_fn handler) {
     Hash_table *ht = (Hash_table *) malloc(sizeof(Hash_table));
 
-    ht->size = size;                                      /* initial size */
-    ht->count = 0;                                        /* initial number of elements*/
-    ht->items = calloc((size_t) ht->size, sizeof(Item*)); /* initialize array */
-    ht->handler = handler;                                /* value handler */
+    ht->size = size;                                         /* initial size */
+    ht->count = 0;                                           /* initial number of elements*/
+    ht->items = calloc((size_t) ht->size, sizeof(HT_Item*)); /* initialize array */
+    ht->handler = handler;                                   /* value handler */
+
     return ht;
 }
 
 /*
- * Get Item's value from Hash table
+ * Get HT_Item's value from Hash table
  * If key doesn't exist, return NULL
  */
 void*
-search_item(Hash_table *ht, const char *key) {
+ht_search_item(Hash_table *ht, const char *key) {
     // Get index in Hash table
     int index = get_index_ht(key, ht->size, 0);
 
-    // Get Item by index
-    Item *it = ht->items[index];
+    // Get HT_Item by index
+    HT_Item *it = ht->items[index];
 
-    // Search Item
+    // Search HT_Item
     int i = 1;
-    while(it != NULL) {
+    while (it != NULL) {
         if (it != &HT_DELETED_ITEM) {
             if (strcmp(it->key, key) == 0) {
                 return it->value;
@@ -60,16 +62,16 @@ search_item(Hash_table *ht, const char *key) {
         it = ht->items[index];
         i++;
     }
-    // Item doesn't exist
+
+    // HT_Item doesn't exist
     return NULL;
 }
 
 /*
- * Inserts Item by provided key in provided Hash table
- * Returns -1 if was an error
+ * Inserts HT_Item by provided key in provided Hash table
  */
-int
-insert_item(Hash_table *ht, const char *key, void *value) {
+void
+ht_insert_item(Hash_table *ht, const char *key, void *value) {
     // Check for load
     int load = ht->count * 100 / ht->size;
 
@@ -78,28 +80,33 @@ insert_item(Hash_table *ht, const char *key, void *value) {
     if (load > 70) {
         resize_up(ht);
     }
-    Item *it = new_item(key, value);
+
+    // Create new HT_Item
+    HT_Item *it = new_item(key, value);
+
+    // Get index by provided key
     int index = get_index_ht(it->key, ht->size, 0);
-    Item *cur_it = ht->items[index];
+
+    // Get HT_Item in provided key
+    HT_Item *cur_it = ht->items[index];
     int i = 1;
-    // If current Item is not NULL
+    // If current HT_Item is not NULL
     // Iterate to find new place where to put new item
-    while((cur_it != NULL) && (cur_it != &HT_DELETED_ITEM)) {
+    while ((cur_it != NULL) && (cur_it != &HT_DELETED_ITEM)) {
         index = get_index_ht(it->key, ht->size, i);
         cur_it = ht->items[index];
         i++;
     }
+
     ht->items[index] = it;
     ht->count++;
-    return 0;
 }
 
 /*
- * Deletes Item and returns stored value 
- * If key doesn't exist, returns NULL
+ * Deletes HT_Item
  */
 void
-delete_item(Hash_table *ht, const char *key) {
+ht_delete_item(Hash_table *ht, const char *key) {
     // Check for load
     int load = ht->count * 100 / ht->size;
     
@@ -109,9 +116,9 @@ delete_item(Hash_table *ht, const char *key) {
         resize_down(ht);
     }
 
-    // Get Item
+    // Get HT_Item
     int index = get_index_ht(key, ht->size, 0);
-    Item *it = ht->items[index];
+    HT_Item *it = ht->items[index];
 
     void *val; /* here will be stored value */
     int i = 1;
@@ -121,6 +128,7 @@ delete_item(Hash_table *ht, const char *key) {
         if (it != &HT_DELETED_ITEM) {
             if (strcmp(it->key, key) == 0) {
                 val = free_item(it);
+
                 if (ht->handler != NULL) {
                     ht->handler(val);
                 }
@@ -138,17 +146,17 @@ delete_item(Hash_table *ht, const char *key) {
 
 /*
  * Deletes Hash table
- * Free all Items without returning their value
+ * Free all HT_Items without returning their value
  * Then free Hash table
  */
 void
 delete_hash_table(Hash_table *ht) {
     void *val; /* here will be stored values */
-    // Delete all Items 
+    // Delete all HT_Items 
     for(int i = 0; i < ht->size; i++) {
         // Get next item
-        Item *it = ht->items[i];
-        // If Item exist, delete it
+        HT_Item *it = ht->items[i];
+        // If HT_Item exist, delete it
         if (it != NULL) {
             val = free_item(it);
 
@@ -161,23 +169,25 @@ delete_hash_table(Hash_table *ht) {
     free(ht->items); /* Free array */
     free(ht);        /* Free Hash table */
 }
+
 // ---------------------------- Additional funcs --------------------------------
 /*
- * New Item for hash table
+ * New HT_Item for hash table
  */
-Item*
+HT_Item*
 new_item(const char *key, void *value) {
-    Item *it = (Item *) malloc(sizeof(Item));
+    HT_Item *it = (HT_Item *) malloc(sizeof(HT_Item));
     it->key = strdup(key); /* copy key */
     it->value = value;
+
     return it;
 }
 
 /*
- * Free Item for hash table
+ * Free HT_Item for hash table
  */
 void*
-free_item(Item *it) {
+free_item(HT_Item *it) {
     void *value = it->value; /* store value */
 
     // Free copied key and memory
@@ -195,13 +205,16 @@ free_item(Item *it) {
 int
 get_hash(const char *str, int prime, int ht_size) {
     long hash = 0; /* result hash */
+
     int str_len = strlen(str);
-    for(int i = 0; i < str_len; i++) {
+    for (int i = 0; i < str_len; i++) {
         // Calculate hash
-        hash += (long)pow(prime, str_len - (i+1)) * str[i];
+        hash += (long) pow(prime, str_len - (i+1)) * str[i];
+
         // Reduce to index in hash table
         hash %= ht_size;
     }
+
     return (int) hash;
 }
 
@@ -224,12 +237,12 @@ resize_hash_table(Hash_table *ht, int size) {
     // Creating new Hash table
     Hash_table *new_ht = new_hash_table(size, ht->handler);
 
-    // Copying Items to new Hash table
+    // Copying HT_Items to new Hash table
     // If not NULLs and deleted
     for(int i = 0; i < ht->size; i++) {
-        Item *it = ht->items[i];
+        HT_Item *it = ht->items[i];
         if (it != NULL && it != &HT_DELETED_ITEM) {
-            insert_item(new_ht, it->key, it->value);
+            ht_insert_item(new_ht, it->key, it->value);
         }
     }
     
